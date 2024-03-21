@@ -1,7 +1,7 @@
 var express = require('express');
 var router = express.Router();
 var bookModel = require('../schemas/book')
-
+var authorModel = require('../schemas/author')
 router.get('/', async function (req, res, next) {
   let limit = req.query.limit ? req.query.limit : 5;
   let page = req.query.page ? req.query.page : 1;
@@ -21,6 +21,7 @@ router.get('/', async function (req, res, next) {
   }
   queries.isDeleted=false;
   books = await bookModel.find(queries)
+  .populate({path:'author',select:"_id name"}).lean()
     .skip((page - 1) * limit).limit(limit).exec();
   res.status(200).send(books);
 });
@@ -41,6 +42,9 @@ router.post('/', async function (req, res, next) {
       author: req.body.author
     });
     await newBook.save();
+    var author = await authorModel.findById(req.body.author).exec();
+    author.published.push(newBook);
+    await author.save();
     res.status(200).send(newBook);
   } catch (error) {
     res.status(404).send(error);
