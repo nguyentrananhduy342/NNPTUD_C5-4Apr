@@ -42,9 +42,6 @@ router.post('/', async function (req, res, next) {
       author: req.body.author
     });
     await newBook.save();
-    var author = await authorModel.findById(req.body.author).exec();
-    author.published.push(newBook);
-    await author.save();
     res.status(200).send(newBook);
   } catch (error) {
     res.status(404).send(error);
