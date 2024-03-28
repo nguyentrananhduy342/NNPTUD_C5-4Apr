@@ -6,22 +6,32 @@ router.get('/', async function (req, res, next) {
   let limit = req.query.limit ? req.query.limit : 5;
   let page = req.query.page ? req.query.page : 1;
   var queries = {};
-  var exclude = ["sort","page","limit"];
-  var stringFilter = ["name","author"];
+  var exclude = ["sort", "page", "limit"];
+  var stringFilter = ["name", "author"];
   var numberFilter = ["year"];
   //{ page: '1', limit: '5', name: 'Hac,Ly', author: 'Cao' }
-  for (const [key,value] of Object.entries(req.query)) {
-      if(!exclude.includes(key)){
-        if(stringFilter.includes(key)){
-          queries[key] = new RegExp(value.replace(',','|'),'i');
-        }else{
-          
+  for (const [key, value] of Object.entries(req.query)) {
+    if (!exclude.includes(key)) {
+      if (stringFilter.includes(key)) {
+        queries[key] = new RegExp(value.replace(',', '|'), 'i');
+      } else {
+        if (numberFilter.includes(key)) {
+          let string = JSON.stringify(value);
+          let index = string.search(new RegExp('lte|gte|lt|gt', 'i'));
+          if (index < 0) {
+            queries[key] = value;
+          } else {
+            queries[key] = JSON.parse(string.slice(0, index) + "$" 
+            + string.slice(2, string.length));
+          }
         }
       }
+    }
   }
-  queries.isDeleted=false;
+  console.log(queries);
+  queries.isDeleted = false;
   books = await bookModel.find(queries)
-  .populate({path:'author',select:"_id name"}).lean()
+    .populate({ path: 'author', select: "_id name" }).lean()
     .skip((page - 1) * limit).limit(limit).exec();
   res.status(200).send(books);
 });
